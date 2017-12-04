@@ -1,0 +1,49 @@
+{
+  "s3Files": [
+    {
+      "bucketName": "democracy-live",
+      "bucketKey": "test.pdf"
+    },
+    {
+        "bucketName": "democracy-live",
+        "bucketKey": "test2.pdf"
+    },
+    {
+        "bucketName": "democracy-live",
+        "bucketKey": "mark.jpg"
+    }
+  ],
+  "definitions": [
+    {
+      "value": "1230 NW 12th ave",
+      "type": "text",
+      "x": 10,
+      "y": 20
+    },
+    {
+      "value": "Portland,OR 97209",
+      "type": "text",
+      "x": 10,
+      "y": 35
+    },
+    {
+      "value": "12345678",
+      "type": "barcode",
+      "bcid": "code128",
+      "x": 400,
+      "y": 20
+    },
+    {
+        "value": "test2.pdf",
+        "type": "pdf",
+        "x": 200,
+        "y": 300
+    },
+    {
+        "value": "mark.jpg",
+        "type": "image",
+        "x": 200,
+        "y": 50
+    }
+  ]
+}
