@@ -4,8 +4,9 @@ const aws = require('aws-sdk');
 const util = require('util');
 const fs = require('fs');
 const HummusRecipe = require('hummus-recipe');
-// var JsBarcode = require('jsbarcode');
+var crypto = require('crypto');
 const bwipjs= require('bwip-js');
+// var JsBarcode = require('jsbarcode');
 // var Canvas = require("canvas-aws-prebuilt");
 const s3 = new aws.S3();
 // const canvas = new Canvas();
@@ -15,11 +16,12 @@ exports.handler=(event,context,callback)=>{
   const s3Files= event.s3Files;
   let s3FilesPromise = getFiles(s3Files);
 
-  //start generating barcode because process takes time
+  //start generating barcode files. Slow, async process.
+  var md5Barcode;
   for (let def of event.definitions) {
     if (def.type==='barcode') {
-      console.log('yes there is barcode type');
-      textToBarcodeFile([def.value, def.bcid]);
+      md5Barcode=md5(def.value);
+      textToBarcodeFile(def.value, def.bcid, md5Barcode);
     }
   }
 
@@ -38,7 +40,7 @@ exports.handler=(event,context,callback)=>{
     const newPdf = `/tmp/${filename}`;
     const pdfDoc = new HummusRecipe(`/tmp/${bucketKey}`, newPdf);
 
-    editPdf(pdfDoc, event.definitions);
+    editPdf(pdfDoc, event.definitions, md5Barcode);
 
     //Returns true if newpdf file exists
     console.log(fs.existsSync(newPdf));
@@ -98,7 +100,7 @@ function writeFiles(values) {
     let dataBody = value[0];
     let currentFileName= value[1];
     let previousFileName= currentFileName;
-    console.log('currentFileName: '+ currentFileName);
+    // console.log('currentFileName: '+ currentFileName);
 
     //dealing with async fs.writeFile method
     let promise = new Promise((success,reject) => {
@@ -116,25 +118,28 @@ function writeFiles(values) {
   return Promise.all(writtenFiles);
 }
 
-function textToBarcodeFile([value,barcodeType]){
-  console.log(barcodeType);
+function md5(string) {
+    var filename= crypto.createHash('md5').update(string).digest('hex');
+    return filename;
+}
+
+function textToBarcodeFile(value,barcodeType,md5Barcode){
   bwipjs.toBuffer({
-        bcid:        barcodeType,       // Barcode type
+        bcid:        barcodeType,
         text:        value,
     }, function (err, png) {
         if (err) {
             console.log('error generating barcode');
         } else {
-            var barcodeFile = `/tmp/${value}.png`;
+            var barcodeFile = `/tmp/${md5Barcode}.png`;
             fs.writeFileSync(barcodeFile, png);
-            console.log(barcodeFile+' saved!');
+            console.log('barcodeFile: '+barcodeFile+' saved!');
         }
     });
 }
 
 
-function editPdf(pdfDoc, definitions) {
-
+function editPdf(pdfDoc, definitions,md5Barcode) {
   pdfDoc.editPage(1);
 
   for (let definition of definitions) {
@@ -155,7 +160,7 @@ function editPdf(pdfDoc, definitions) {
         pdfDoc.image(`/tmp/${value}`, x, y, {width: 300, keepAspectRatio: true});
         break;
       case "barcode":
-        pdfDoc.image(`/tmp/${value}.png`, x, y, {width: 100, keepAspectRatio: true});
+        pdfDoc.image(`/tmp/${md5Barcode}.png`, x, y, {width: 100, keepAspectRatio: true});
         break;
       default:
     }
